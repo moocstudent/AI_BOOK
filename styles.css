@@ -887,11 +887,17 @@ button { font-family: inherit; }
 .roadmap-key .sw.done { background: var(--ink); }
 .roadmap-key .sw.active { background: var(--accent); border-color: var(--accent); }
 
-.station {
-  cursor: pointer;
+.rm-station-wrap { cursor: pointer; }
+/* Position lives on the OUTER <g transform="translate(x,y)"> attribute.
+   All CSS transforms (pop-in + hover lift) go on this INNER group so they
+   never override the outer translate() and teleport the station. */
+.rm-station-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stationPop .35s cubic-bezier(.7,.1,.2,1) backwards;
   transition: transform .15s;
 }
-.station:hover { transform: translateY(-2px); }
+.rm-station-wrap:hover .rm-station-inner { transform: translateY(-2px); }
 
 /* Roadmap animations */
 @keyframes drawIn {
@@ -912,10 +918,7 @@ button { font-family: inherit; }
   from { opacity: 0; transform: scale(.6); }
   to   { opacity: 1; transform: scale(1); }
 }
-.rm-station {
-  transform-origin: center;
-  animation: stationPop .35s cubic-bezier(.7,.1,.2,1) backwards;
-}
+/* station pop-in + hover lift handled by .rm-station-inner above */
 
 @keyframes pulseRing {
   0%   { transform: scale(1); opacity: 0.9; }

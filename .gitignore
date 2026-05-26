@@ -1,9 +1,12 @@
-# Local secrets — never commit
+# Plaintext config — never commit (the site uses the encrypted blob instead)
 firebase-config.local.json
-firebase-key.local.js
 tools/.secret
 .env
 .env.*
+
+# NOTE: firebase-key.local.js IS committed on purpose — a public registration
+# site must ship what it needs to talk to Firebase. Real protection comes from
+# Firebase Authorized domains + Security Rules, NOT from hiding this passphrase.
 
 # Dependencies / OS
 node_modules/

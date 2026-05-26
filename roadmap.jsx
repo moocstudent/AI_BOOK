@@ -148,14 +148,14 @@ const Roadmap = ({ progress, onCourseClick, height = 480 }) => {
             return (
               <g
                 key={c.id}
-                className="station rm-station"
-                style={{ animationDelay: `${delay}ms` }}
+                className="rm-station-wrap"
                 transform={`translate(${p.x},${p.y})`}
                 onClick={() => onCourseClick(c.id)}
                 onMouseEnter={(e) => handleEnter(e, c)}
                 onMouseMove={handleMove}
                 onMouseLeave={() => setHover(null)}
               >
+                <g className="rm-station-inner" style={{ animationDelay: `${delay}ms` }}>
                 {/* pulse + halo on hover */}
                 {hover?.id === c.id && (
                   <>
@@ -204,6 +204,7 @@ const Roadmap = ({ progress, onCourseClick, height = 480 }) => {
                 >
                   {c.credits} CR · {c.weeks}W
                 </text>
+                </g>
               </g>
             );
           })
