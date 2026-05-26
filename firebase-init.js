@@ -70,8 +70,27 @@
     }
     try {
       const cfg = await decryptConfig(enc, pass);
+      const appCheckSiteKey = cfg.appCheckSiteKey;
+      delete cfg.appCheckSiteKey; // not a standard initializeApp option
       firebase.initializeApp(cfg);
       console.log('[firebase-init] Firebase ready:', cfg.projectId);
+
+      // App Check (reCAPTCHA v3). Site key is public/safe in client code.
+      // reCAPTCHA v3 keys are domain-bound, so App Check only works on the
+      // deployed domain. We SKIP it on localhost so local dev isn't blocked.
+      // (To test App Check locally, set FIREBASE_APPCHECK_DEBUG_TOKEN=true and
+      //  register the printed debug token in the Firebase console.)
+      const isLocalHost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (appCheckSiteKey && firebase.appCheck && !isLocalHost) {
+        try {
+          firebase.appCheck().activate(appCheckSiteKey, true /* auto-refresh */);
+          console.log('[firebase-init] App Check activated');
+        } catch (e2) {
+          console.error('[firebase-init] App Check activate failed:', e2);
+        }
+      } else if (isLocalHost) {
+        console.log('[firebase-init] App Check skipped on localhost (dev).');
+      }
       return true;
     } catch (e) {
       window.__FIREBASE_LOCKED__ = true;
