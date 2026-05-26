@@ -23,32 +23,70 @@ function useHashRoute() {
   return [hash, (h) => { window.location.hash = h; window.scrollTo({ top: 0 }); }];
 }
 
+// Progress storage:
+//  - logged in  → Firebase RTDB  /progress/<uid>  (cross-device, per account)
+//  - guest / offline → localStorage fallback
 function useProgress(user) {
-  const storageKey = user ? `ai_progress__${user.email}` : "ai_progress__guest";
-  const [progress, setProgress] = React.useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey)) || {}; }
-    catch (e) { return {}; }
-  });
-  // re-load when user changes
+  const uid = user ? user.uid : null;
+  const [progress, setProgress] = React.useState({});
+
   React.useEffect(() => {
-    try { setProgress(JSON.parse(localStorage.getItem(storageKey)) || {}); }
-    catch(e) { setProgress({}); }
-  // eslint-disable-next-line
-  }, [storageKey]);
+    if (!uid) {
+      try { setProgress(JSON.parse(localStorage.getItem("ai_progress__guest")) || {}); }
+      catch (e) { setProgress({}); }
+      return;
+    }
+    let ref = null, handler = null, alive = true;
+    (async () => {
+      const ok = await window.__FIREBASE_READY__;
+      if (!alive) return;
+      if (!ok || typeof firebase === "undefined" || !firebase.database) {
+        try { setProgress(JSON.parse(localStorage.getItem("ai_progress__" + uid)) || {}); }
+        catch (e) { setProgress({}); }
+        return;
+      }
+      ref = firebase.database().ref("progress/" + uid);
+      handler = ref.on("value",
+        (snap) => { if (alive) setProgress(snap.val() || {}); },
+        (err) => console.error("[progress] read failed:", err && err.code));
+    })();
+    return () => { alive = false; if (ref && handler) ref.off("value", handler); };
+  }, [uid]);
 
   const toggle = (id) => {
-    setProgress((p) => {
-      const next = { ...p, [id]: !p[id] };
-      if (!next[id]) delete next[id];
-      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch(e){}
-      return next;
-    });
+    if (!uid || typeof firebase === "undefined" || !firebase.database) {
+      setProgress((p) => {
+        const next = { ...p };
+        if (next[id]) delete next[id]; else next[id] = true;
+        try { localStorage.setItem(uid ? "ai_progress__" + uid : "ai_progress__guest", JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+      return;
+    }
+    const turningOff = !!progress[id];
+    firebase.database().ref("progress/" + uid + "/" + id).set(turningOff ? null : true)
+      .catch((e) => console.error("[progress] write failed:", e && e.code));
   };
+
   const reset = () => {
-    setProgress({});
-    try { localStorage.removeItem(storageKey); } catch(e){}
+    if (!uid || typeof firebase === "undefined" || !firebase.database) {
+      setProgress({});
+      try { localStorage.removeItem("ai_progress__guest"); } catch (e) {}
+      return;
+    }
+    firebase.database().ref("progress/" + uid).remove()
+      .catch((e) => console.error("[progress] reset failed:", e && e.code));
   };
-  return [progress, toggle, reset];
+
+  const markAll = () => {
+    if (!uid || typeof firebase === "undefined" || !firebase.database) return;
+    const seed = {};
+    COURSES.forEach((c) => { seed[c.id] = true; });
+    firebase.database().ref("progress/" + uid).set(seed)
+      .catch((e) => console.error("[progress] markAll failed:", e && e.code));
+  };
+
+  return [progress, toggle, reset, markAll];
 }
 
 function useTheme() {
@@ -132,7 +170,7 @@ const Nav = ({ progress, theme, toggleTheme, nav, route, auth, onLogin }) => {
 const App = () => {
   const [hash, nav] = useHashRoute();
   const auth = useAuth();
-  const [progress, toggleProgress, resetProgress] = useProgress(auth.user);
+  const [progress, toggleProgress, resetProgress, markAllDone] = useProgress(auth.user);
   const [theme, toggleTheme] = useTheme();
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
@@ -241,10 +279,7 @@ const App = () => {
           <TweakButton label="清空学习进度 · Reset" onClick={resetProgress} />
           <TweakButton label="标记全部完成 · All done" secondary onClick={() => {
             if (!auth.user) { openLogin("login"); return; }
-            const seed = {};
-            COURSES.forEach(c => { seed[c.id] = true; });
-            localStorage.setItem(`ai_progress__${auth.user.email}`, JSON.stringify(seed));
-            window.location.reload();
+            markAllDone();
           }} />
         </TweakSection>
       </TweaksPanel>
