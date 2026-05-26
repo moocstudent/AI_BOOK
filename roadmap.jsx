@@ -1,0 +1,295 @@
+/* =========================================================
+   Roadmap — 地铁线式 SVG 可视化
+   4 模块 × 4 课 = 16 站
+   ========================================================= */
+
+const Roadmap = ({ progress, onCourseClick, height = 480 }) => {
+  const [hover, setHover] = React.useState(null);
+  const [tipPos, setTipPos] = React.useState({ x: 0, y: 0 });
+  const wrapRef = React.useRef(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 760);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Group courses by module preserving order
+  const byMod = MODULES.map((m) => ({
+    mod: m,
+    courses: COURSES.filter((c) => c.moduleId === m.id),
+  }));
+
+  if (isMobile) {
+    return <RoadmapMobile byMod={byMod} progress={progress} onCourseClick={onCourseClick} />;
+  }
+
+  // ============== Desktop SVG layout ==============
+  const W = 1280;
+  const H = height;
+  const padL = 170;
+  const padR = 70;
+  const trackGap = 92;
+  const top = 70;
+  const cols = 4; // decorative bottom axis divisions only
+  const colSpan = (W - padL - padR) / (cols - 1);
+
+  // Per-row horizontal spacing: each module may have a different number of
+  // courses, so space stations evenly across the track based on that row's count.
+  const rowSpan = (n) => (n > 1 ? (W - padL - padR) / (n - 1) : 0);
+  const pos = (moduleIdx, courseIdx) => ({
+    x: padL + courseIdx * rowSpan(byMod[moduleIdx].courses.length),
+    y: top + moduleIdx * trackGap,
+  });
+
+  // Build dependency arcs (cross-track)
+  const arcs = [];
+  COURSES.forEach((c) => {
+    const cMod = MODULES.findIndex((m) => m.id === c.moduleId);
+    const cIdx = byMod[cMod].courses.findIndex((x) => x.id === c.id);
+    c.prereq.forEach((pid) => {
+      const p = COURSES.find((x) => x.id === pid);
+      if (!p) return;
+      const pMod = MODULES.findIndex((m) => m.id === p.moduleId);
+      const pIdx = byMod[pMod].courses.findIndex((x) => x.id === p.id);
+      if (pMod === cMod) return; // same track handled by track line
+      arcs.push({ from: pos(pMod, pIdx), to: pos(cMod, cIdx), pid, cid: c.id });
+    });
+  });
+
+  const handleEnter = (e, c) => {
+    setHover(c);
+    const rect = wrapRef.current.getBoundingClientRect();
+    setTipPos({ x: e.clientX, y: e.clientY });
+  };
+  const handleMove = (e) => {
+    setTipPos({ x: e.clientX, y: e.clientY });
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+        <defs>
+          <pattern id="grit" patternUnits="userSpaceOnUse" width="8" height="8">
+            <circle cx="1" cy="1" r="0.4" fill="var(--hairline-strong)" />
+          </pattern>
+        </defs>
+
+        {/* Module track labels left */}
+        {byMod.map((row, i) => {
+          const y = top + i * trackGap;
+          const isAccent = row.mod.accent === "accent";
+          return (
+            <g key={row.mod.id}>
+              <text
+                x={padL - 28} y={y - 10}
+                textAnchor="end"
+                fontFamily="var(--f-mono)" fontSize="10"
+                letterSpacing="0.14em" fill="var(--muted)"
+              >
+                {row.mod.code}
+              </text>
+              <text
+                x={padL - 28} y={y + 8}
+                textAnchor="end"
+                fontFamily="var(--f-display)"
+                fontStyle="italic"
+                fontSize="22"
+                fill={isAccent ? "var(--accent)" : "var(--ink)"}
+              >
+                {row.mod.en.split(" ")[0]}.
+              </text>
+              {/* Track baseline */}
+              <line
+                className={`rm-track t-${i}`}
+                x1={padL - 18} y1={y}
+                x2={W - padR + 20} y2={y}
+                stroke={isAccent ? "var(--accent)" : "var(--ink)"}
+                strokeWidth="2"
+              />
+              {/* End cap */}
+              <circle cx={W - padR + 24} cy={y} r="4" fill={isAccent ? "var(--accent)" : "var(--ink)"} />
+            </g>
+          );
+        })}
+
+        {/* Cross-module dependency arcs (dashed) */}
+        {arcs.map((a, i) => {
+          const midX = (a.from.x + a.to.x) / 2;
+          const dx = a.to.x - a.from.x;
+          const curve = Math.abs(dx) < 80 ? 30 : 50;
+          const path =
+            `M ${a.from.x} ${a.from.y} ` +
+            `C ${a.from.x} ${a.from.y + curve}, ${a.to.x} ${a.to.y - curve}, ${a.to.x} ${a.to.y}`;
+          const hi = hover && (hover.id === a.pid || hover.id === a.cid);
+          return (
+            <path
+              key={i}
+              className={hi ? "rm-arc hi" : ""}
+              d={path}
+              fill="none"
+              stroke="var(--ink)"
+              strokeWidth="1"
+              strokeDasharray={hi ? undefined : "2 4"}
+              opacity={hi ? 1 : 0.35}
+            />
+          );
+        })}
+
+        {/* Stations */}
+        {byMod.map((row, mi) =>
+          row.courses.map((c, ci) => {
+            const p = pos(mi, ci);
+            const done = !!progress[c.id];
+            const accent = row.mod.accent === "accent";
+            const delay = (mi * 4 + ci) * 60 + 400;
+            return (
+              <g
+                key={c.id}
+                className="station rm-station"
+                style={{ animationDelay: `${delay}ms` }}
+                transform={`translate(${p.x},${p.y})`}
+                onClick={() => onCourseClick(c.id)}
+                onMouseEnter={(e) => handleEnter(e, c)}
+                onMouseMove={handleMove}
+                onMouseLeave={() => setHover(null)}
+              >
+                {/* pulse + halo on hover */}
+                {hover?.id === c.id && (
+                  <>
+                    <circle className="rm-pulse" r="16" fill="none" stroke="var(--accent)" strokeWidth="1.5" />
+                    <circle r="22" fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.4" />
+                  </>
+                )}
+                {/* outer ring */}
+                <rect
+                  x={-14} y={-14} width="28" height="28"
+                  fill={done ? "var(--accent)" : "var(--bg)"}
+                  stroke={done ? "var(--accent)" : (accent ? "var(--accent)" : "var(--ink)")}
+                  strokeWidth="2"
+                />
+                {/* inner code */}
+                <text
+                  x="0" y="4"
+                  textAnchor="middle"
+                  fontFamily="var(--f-mono)"
+                  fontSize="10"
+                  fontWeight="600"
+                  letterSpacing="0.04em"
+                  fill={done ? "var(--accent-ink)" : "var(--ink)"}
+                >
+                  {c.code.replace("CS-", "")}
+                </text>
+
+                {/* label below */}
+                <text
+                  x="0" y="38"
+                  textAnchor="middle"
+                  fontFamily="Noto Serif SC, serif"
+                  fontSize="13"
+                  fontWeight="500"
+                  fill="var(--ink)"
+                >
+                  {c.zh}
+                </text>
+                <text
+                  x="0" y="54"
+                  textAnchor="middle"
+                  fontFamily="var(--f-mono)"
+                  fontSize="9"
+                  letterSpacing="0.1em"
+                  fill="var(--muted)"
+                >
+                  {c.credits} CR · {c.weeks}W
+                </text>
+              </g>
+            );
+          })
+        )}
+
+        {/* Bottom legend / axis */}
+        <g transform={`translate(0, ${top + 3 * trackGap + 90})`}>
+          <line x1={padL} y1="0" x2={W - padR} y2="0" stroke="var(--hairline-strong)" strokeWidth="1" />
+          {["I · 入门", "II · 核心", "III · 进阶", "IV · 前沿"].map((t, i) => {
+            const x = padL + i * colSpan;
+            return (
+              <g key={i} transform={`translate(${x}, 12)`}>
+                <line x1="0" y1="-4" x2="0" y2="4" stroke="var(--hairline-strong)" />
+                <text
+                  x="0" y="22"
+                  textAnchor="middle"
+                  fontFamily="var(--f-mono)"
+                  fontSize="10"
+                  letterSpacing="0.16em"
+                  fill="var(--muted)"
+                >
+                  {t}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+
+      {hover && (
+        <div
+          className="station-tooltip"
+          style={{
+            left: Math.min(tipPos.x + 16, window.innerWidth - 300),
+            top: tipPos.y + 16,
+            opacity: 1,
+          }}
+        >
+          <div className="m">{hover.code} · {MODULES.find(m=>m.id===hover.moduleId).zh}</div>
+          <div className="t">
+            <span className="cn">{hover.zh}</span>{" "}
+            <span style={{ opacity: 0.6 }}>{hover.en}</span>
+          </div>
+          <div className="m" style={{ marginTop: 8 }}>
+            {hover.credits} 学分 · {hover.weeks} 周 · {hover.prereq.length ? `先修 ${hover.prereq.length}` : "无先修"}
+          </div>
+          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85, fontFamily: "var(--f-body)" }}>
+            {hover.goal.slice(0, 60)}…
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Mobile fallback: vertical timeline
+const RoadmapMobile = ({ byMod, progress, onCourseClick }) => {
+  return (
+    <div style={{ padding: "16px 20px" }}>
+      {byMod.map((row, mi) => {
+        const isAccent = row.mod.accent === "accent";
+        return (
+          <div key={row.mod.id} style={{ marginBottom: 28 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, paddingBottom: 8, borderBottom: `2px solid ${isAccent ? "var(--accent)" : "var(--ink)"}` }}>
+              <span className="mono" style={{ fontSize: 11, letterSpacing: "0.14em", color: "var(--muted)" }}>{row.mod.code}</span>
+              <span style={{ fontFamily: "var(--f-display)", fontStyle: "italic", fontSize: 22, color: isAccent ? "var(--accent)" : "var(--ink)" }}>{row.mod.en.split(" ")[0]}</span>
+              <span style={{ fontFamily: "Noto Serif SC, serif", fontSize: 14, fontWeight: 500, marginLeft: "auto" }}>{row.mod.zh}</span>
+            </div>
+            <div style={{ position: "relative", paddingLeft: 24, marginTop: 12 }}>
+              <div style={{ position: "absolute", left: 8, top: 8, bottom: 8, width: 2, background: isAccent ? "var(--accent)" : "var(--ink)" }} />
+              {row.courses.map((c) => {
+                const done = !!progress[c.id];
+                return (
+                  <div key={c.id} onClick={() => onCourseClick(c.id)} style={{ position: "relative", padding: "10px 0", cursor: "pointer" }}>
+                    <div style={{ position: "absolute", left: -22, top: 14, width: 18, height: 18, border: `2px solid ${done ? "var(--accent)" : "var(--ink)"}`, background: done ? "var(--accent)" : "var(--bg)" }} />
+                    <div style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, fontWeight: 500 }}>{c.zh}</div>
+                    <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--muted)", letterSpacing: "0.06em", marginTop: 2 }}>{c.code} · {c.credits} 学分 · {c.weeks} 周</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+window.Roadmap = Roadmap;

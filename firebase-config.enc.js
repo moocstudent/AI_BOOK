@@ -1,0 +1,5 @@
+// AUTO-GENERATED — safe to commit (ciphertext only).
+// Firebase config, AES-256-GCM encrypted. Decrypted in the browser by firebase-init.js
+// using the passphrase in firebase-key.local.js (kept on your machine, gitignored).
+// Regenerate after editing firebase-config.local.json:  node tools/encrypt-config.mjs
+window.__FIREBASE_ENC__ = "c8hW4PvSBBSxIJDn1M4OPhBxaQba4pNtRvA3QSVBpQiPd0IU1LcjJS4sosl1lHZZyK9Z7LpWKweMiMzshfFh50Y7XmsfiYuL6yFvir3OssxagnaiDO5Q2CgsvLeaLyg4giCB9yW8hpbM5hy9AhGcpdyVa0DJWfUAFyox9GbGuSBVbOTaZk9TCFzJHMIu4FymUq0B0Wv/w1U1sVpEfUMIHfD4LR7JBxNKFR+6m0vCJqj9BtCoAmrgB3BRlixFoYN38DEBJQDnhcLkGHU3UqqS3PpTUyOmAoSpgLDxENpxdDEcTcpyJqXS4/sDy2sk6vqpBRRKgWI+pl4mD7LZ97XMQB09anXxVNMs8daP5NEptQRfCwxsVhyIsBD9fNqGkHQDfUIscQWZV/VM2gDsadBpvGAGcZmS8unfg/pzbuz/qs8UGIRbpc64UQsOppD0PBhXOiqnEpntKaPtx7YpcOMuToxZofklykVr2DHkBMSI40xF3EZhCN7xXB/kc+uFmSZgrB0BBeHqCj7j3Qx7T9PqYp4UjBhVGeqOrVNUmxUswk2n";

@@ -1,0 +1,11 @@
+# Local secrets — never commit
+firebase-config.local.json
+firebase-key.local.js
+tools/.secret
+.env
+.env.*
+
+# Dependencies / OS
+node_modules/
+.DS_Store
+Thumbs.db
