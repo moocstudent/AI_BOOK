@@ -191,7 +191,7 @@ const AuthModal = ({ open, onClose, mode = "login", onModeChange, auth, courseHi
             <span>邮箱 · Email</span>
             <input
               type="email" required autoFocus
-              placeholder="you@somewhere.com"
+              placeholder="student@edu.com"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />

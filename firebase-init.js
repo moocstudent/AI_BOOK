@@ -76,20 +76,27 @@
       console.log('[firebase-init] Firebase ready:', cfg.projectId);
 
       // App Check (reCAPTCHA v3). Site key is public/safe in client code.
-      // reCAPTCHA v3 keys are domain-bound, so App Check only works on the
-      // deployed domain. We SKIP it on localhost so local dev isn't blocked.
-      // (To test App Check locally, set FIREBASE_APPCHECK_DEBUG_TOKEN=true and
-      //  register the printed debug token in the Firebase console.)
+      //
+      // ⚠️ Keep this OFF until App Check is fully set up in the Firebase console.
+      // If you activate it before then, a token can't be issued (provider not
+      // registered, or the deploy domain isn't on the reCAPTCHA key) and EVERY
+      // auth/DB request fails with `network-request-failed`.
+      //
+      // To turn on, AFTER console setup is verified:
+      //   1) Firebase console → App Check → register this web app w/ reCAPTCHA v3 (paste the SECRET).
+      //   2) reCAPTCHA admin → make sure the key's domains include your deploy domain (moocstudent.github.io).
+      //   3) Flip APP_CHECK_ENABLED to true and redeploy. Watch metrics (monitor) before you Enforce.
+      const APP_CHECK_ENABLED = false;
       const isLocalHost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-      if (appCheckSiteKey && firebase.appCheck && !isLocalHost) {
+      if (APP_CHECK_ENABLED && appCheckSiteKey && firebase.appCheck && !isLocalHost) {
         try {
           firebase.appCheck().activate(appCheckSiteKey, true /* auto-refresh */);
           console.log('[firebase-init] App Check activated');
         } catch (e2) {
           console.error('[firebase-init] App Check activate failed:', e2);
         }
-      } else if (isLocalHost) {
-        console.log('[firebase-init] App Check skipped on localhost (dev).');
+      } else {
+        console.log('[firebase-init] App Check inactive (enabled=' + APP_CHECK_ENABLED + ', localhost=' + isLocalHost + ').');
       }
       return true;
     } catch (e) {
