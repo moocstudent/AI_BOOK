@@ -50,7 +50,7 @@ const HomePage = ({ progress, toggleProgress, nav, user, onLogin }) => {
         <p className="hero-sub dropcap">
           这是一份把硕士级 AI 课程体系拆成 16 门、120 学分的自学地图——
           数学、系统、机器学习、前沿,四条主线,两年走完。
-          每一门课配讲义、必读论文、作业与自测,勾选完成,本地保存。
+          每一门课配讲义、必读论文、作业与自测,勾选完成,云端同步。
         </p>
         <div className="cta-row">
           {user ? (
@@ -100,7 +100,7 @@ const HomePage = ({ progress, toggleProgress, nav, user, onLogin }) => {
           <div className="right">
             <div><strong>{doneCount}</strong> / {total} courses</div>
             <div><strong>{doneCredits}</strong> / {COURSES.reduce((s,c)=>s+c.credits,0)} credits</div>
-            <div style={{ marginTop: 6 }}>locally stored · localStorage</div>
+            <div style={{ marginTop: 6 }}>Firebase · 跨设备同步</div>
           </div>
         </div>
         <div className="linebar"><div className="fill" style={{ width: `${pct}%` }} /></div>
@@ -224,7 +224,7 @@ const HomePage = ({ progress, toggleProgress, nav, user, onLogin }) => {
 
       <footer className="footer">
         <span>AI 自学成才 · self-taught AI</span>
-        <span>{`{ ${doneCount}/${total} } · stored locally`}</span>
+        <span>{`{ ${doneCount}/${total} } · 云端同步`}</span>
         <span>github · MIT · v0.3</span>
       </footer>
     </div>
@@ -601,7 +601,7 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
               onClick={() => toggleProgress(c.id)}
             >
               <span>{isDone ? "✓ 已完成" : "□ 标记完成"}</span>
-              <span style={{ opacity: 0.6 }}>localStorage</span>
+              <span style={{ opacity: 0.6 }}>☁ Firebase</span>
             </button>
           </aside>
         </div>
@@ -653,7 +653,7 @@ const AboutPage = ({ nav }) => (
           <p>
             <strong>1.</strong> 从首页路线图开始,看完 16 门课的位置与依赖。<br/>
             <strong>2.</strong> 选一门感兴趣的课,把它的资源清单走完。<br/>
-            <strong>3.</strong> 完成作业,勾选「已完成」。进度保存在你浏览器的 localStorage——不上传服务器,也无法跨设备同步。<br/>
+            <strong>3.</strong> 完成作业,勾选「已完成」。进度按账号保存在云端(Firebase),登录后自动跨设备同步;未登录时暂存本地。<br/>
             <strong>4.</strong> 如果某门课让你卡住,回到它的先修补一补;如果某门课你已经会了,直接跳过。
           </p>
         </div>

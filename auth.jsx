@@ -7,8 +7,8 @@
    { user, error, setError, register, login, logout, ready }.
 
    - Account + credentials: handled by Firebase (cloud).
-   - Per-user learning progress: still localStorage, keyed by email
-     (see useProgress in app.jsx). Not synced across devices.
+   - Per-user learning progress: Firebase RTDB /progress/<uid>
+     (see useProgress in app.jsx). Synced across devices; guest = localStorage.
    ========================================================= */
 
 function mapUser(u) {
@@ -154,13 +154,13 @@ const AuthModal = ({ open, onClose, mode = "login", onModeChange, auth, courseHi
           <p className="auth-blurb">
             {courseHint
               ? <>你正要打开 <strong>《{courseHint}》</strong> 的细节——讲义、必读论文、作业与自测清单。这部分对登录用户开放。</>
-              : <>登录后可解锁全部课程的讲义、论文清单与作业。账号由 <strong>Firebase</strong> 托管,你的学习进度保存在本机浏览器。</>
+              : <>登录后可解锁全部课程的讲义、论文清单与作业。账号与学习进度都由 <strong>Firebase</strong> 托管,登录后跨设备同步。</>
             }
           </p>
 
           <ul className="auth-bullets">
             <li><span className="b-mark">▣</span> 解锁全部课程的细节</li>
-            <li><span className="b-mark">▣</span> 进度按账号本地保存</li>
+            <li><span className="b-mark">▣</span> 进度云端同步 · 跨设备</li>
             <li><span className="b-mark">▣</span> 账号由 Firebase 安全托管</li>
           </ul>
         </div>
