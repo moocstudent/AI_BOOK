@@ -48,7 +48,7 @@ function useProgress(user) {
       ref = firebase.database().ref("progress/" + uid);
       handler = ref.on("value",
         (snap) => { if (alive) setProgress(snap.val() || {}); },
-        (err) => console.error("[progress] read failed:", err && err.code));
+        (err) => console.error("[progress] read failed:", err && err.code, err && err.message));
     })();
     return () => { alive = false; if (ref && handler) ref.off("value", handler); };
   }, [uid]);
@@ -64,8 +64,23 @@ function useProgress(user) {
       return;
     }
     const turningOff = !!progress[id];
+    // Optimistic UI: state flips immediately so the click is visible even if
+    // the listener is slow/blocked. The .on('value') listener will reconcile
+    // to server truth; if the write fails (rules/App Check), we revert below.
+    setProgress((p) => {
+      const next = { ...p };
+      if (turningOff) delete next[id]; else next[id] = true;
+      return next;
+    });
     firebase.database().ref("progress/" + uid + "/" + id).set(turningOff ? null : true)
-      .catch((e) => console.error("[progress] write failed:", e && e.code));
+      .catch((e) => {
+        console.error("[progress] write failed:", e && e.code, e && e.message);
+        setProgress((p) => {
+          const next = { ...p };
+          if (turningOff) next[id] = true; else delete next[id];
+          return next;
+        });
+      });
   };
 
   const reset = () => {
