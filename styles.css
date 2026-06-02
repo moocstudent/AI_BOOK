@@ -1508,3 +1508,16 @@ button { font-family: inherit; }
   .lock-cta { flex-direction: column; }
   .lock-cta .btn { width: 100%; }
 }
+
+/* Resource/paper entries without a verified URL — render as inert tile */
+.resource-card.nolink,
+.paper.nolink {
+  cursor: default;
+  opacity: 0.6;
+}
+.resource-card.nolink:hover,
+.paper.nolink:hover {
+  transform: none;
+  background: inherit;
+}
+.paper.nolink:hover .pt { color: inherit; }

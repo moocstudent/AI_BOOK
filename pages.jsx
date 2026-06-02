@@ -48,7 +48,7 @@ const HomePage = ({ progress, toggleProgress, nav, user, onLogin }) => {
           <span>an entire</span> <em>AI master's.</em>
         </h1>
         <p className="hero-sub dropcap">
-          这是一份把硕士级 AI 课程体系拆成 16 门、120 学分的自学地图——
+          这是一份把硕士级 AI 课程体系拆成 {COURSES.length} 门、{TOTAL_CREDITS} 学分的自学地图——
           数学、系统、机器学习、前沿,四条主线,两年走完。
           每一门课配讲义、必读论文、作业与自测,勾选完成,云端同步。
         </p>
@@ -72,19 +72,19 @@ const HomePage = ({ progress, toggleProgress, nav, user, onLogin }) => {
 
         <div className="hero-meta">
           <div className="cell">
-            <div className="v">04</div>
+            <div className="v">{String(MODULES.length).padStart(2, "0")}</div>
             <div className="l">Modules · 模块</div>
           </div>
           <div className="cell">
-            <div className="v">16</div>
+            <div className="v">{COURSES.length}</div>
             <div className="l">Courses · 课程</div>
           </div>
           <div className="cell">
-            <div className="v">120</div>
+            <div className="v">{TOTAL_CREDITS}</div>
             <div className="l">Credits · 学分</div>
           </div>
           <div className="cell">
-            <div className="v">~100</div>
+            <div className="v">~{TOTAL_WEEKS}</div>
             <div className="l">Weeks · 周</div>
           </div>
         </div>
@@ -535,12 +535,15 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
                 <p style={{ color: "var(--muted)" }}>这门课的资源仍在收集中。</p>
               ) : (
                 <div className="resource-grid">
-                  {c.resources.map((r, i) => (
-                    <a key={i} className="resource-card" href={r.url} target="_blank" rel="noopener noreferrer">
+                  {c.resources.map((r, i) => {
+                    const inner = <>
                       <div className="kind">{r.type === "video" ? "▶ Video / 课程" : "▣ Book / 教材"}</div>
                       <div className="rt">{r.title}</div>
-                    </a>
-                  ))}
+                    </>;
+                    return r.url
+                      ? <a key={i} className="resource-card" href={r.url} target="_blank" rel="noopener noreferrer">{inner}</a>
+                      : <div key={i} className="resource-card nolink" title="暂无可靠官方链接">{inner}</div>;
+                  })}
                 </div>
               )}
             </section>
@@ -549,13 +552,16 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
               <h2><span className="idx">05</span> <span className="cn">必读论文 / Papers</span></h2>
               {c.papers.length === 0 ? (
                 <p style={{ color: "var(--muted)" }}>本课为基础课程,以教材为主。</p>
-              ) : c.papers.map((p, i) => (
-                <a key={i} className="paper" href={p.url} target="_blank" rel="noopener noreferrer">
+              ) : c.papers.map((p, i) => {
+                const inner = <>
                   <span className="ref">[{String(i+1).padStart(2,"0")}]</span>
                   <span className="pt">{p.title}</span>
                   <span className="venue">{p.venue}</span>
-                </a>
-              ))}
+                </>;
+                return p.url
+                  ? <a key={i} className="paper" href={p.url} target="_blank" rel="noopener noreferrer">{inner}</a>
+                  : <div key={i} className="paper nolink" title="暂无可靠官方链接">{inner}</div>;
+              })}
             </section>
 
             <section id="s-assignments" className="cs-block">
@@ -642,7 +648,7 @@ const AboutPage = ({ nav }) => (
           <h3><span className="cn">这是什么</span></h3>
           <p>
             一个面向有编程背景的自学者的 AI 路线图。我们把通常需要 2 年完成的硕士级课程拆成
-            <strong> 4 个模块、16 门课、120 学分</strong>,每门课配置教材、视频、论文、作业与自测。
+            <strong> {MODULES.length} 个模块、{COURSES.length} 门课、{TOTAL_CREDITS} 学分</strong>,每门课配置教材、视频、论文、作业与自测。
           </p>
           <p>
             不卖课、不收钱、不发证书。它只是一份你可以打开、关上、再打开的地图。
