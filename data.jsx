@@ -1,6 +1,7 @@
 // 课程体系数据 —— 4 模块 / 20 门课
 // 所有 resources/papers URL 均经过 WebFetch 实际核验(2026-05-26);
-// 无可靠官方免费链接的条目 url: null,前端渲染为不可点击的占位卡片。
+// 全部为开源/免费合法资源(官方课程、作者免费书、开源教材、arXiv、CC 授权);
+// 原版权书已替换为同主题的开源/免费替代。前端对 url:null 仍兼容(.nolink 灰态)。
 
 const MODULES = [
   {
@@ -79,10 +80,10 @@ const COURSES = [
       { type: "video", title: "MIT 18.06 — Gilbert Strang", url: "https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/" },
       { type: "book",  title: "Mathematics for Machine Learning (Ch.2-4)", url: "https://mml-book.github.io/" },
       { type: "video", title: "MIT 18.065 — Matrix Methods (Strang)", url: "https://ocw.mit.edu/courses/18-065-matrix-methods-in-data-analysis-signal-processing-and-machine-learning-spring-2018/" },
-      { type: "book",  title: "Linear Algebra Done Right · Axler", url: null },
+      { type: "book",  title: "Introduction to Applied Linear Algebra (VMLS) · Boyd & Vandenberghe", url: "https://web.stanford.edu/~boyd/vmls/" },
     ],
     papers: [
-      { title: "A Singularly Valuable Decomposition: The SVD of a Matrix", venue: "College Math Journal, 1996", url: null },
+      { title: "Singular Value Decomposition (SVD) — 几何直觉详解", venue: "Gregory Gundersen, 2018", url: "https://gregorygundersen.com/blog/2018/12/10/svd/" },
     ],
     assignments: [
       "手写实现 PCA 与 SVD,并在 MNIST 上对比 sklearn",
@@ -160,7 +161,7 @@ const COURSES = [
       { type: "video", title: "MIT 18.650 — Statistics for Applications (Rigollet)", url: "https://ocw.mit.edu/courses/18-650-statistics-for-applications-fall-2016/" },
       { type: "video", title: "Seeing Theory — Brown University (交互可视化)", url: "https://seeing-theory.brown.edu/" },
       { type: "book",  title: "Mathematics for Machine Learning (Ch.6)", url: "https://mml-book.github.io/" },
-      { type: "book",  title: "All of Statistics · Wasserman", url: null },
+      { type: "book",  title: "Think Stats (2nd ed.) · Allen Downey (开源)", url: "https://greenteapress.com/thinkstats2/thinkstats2.pdf" },
     ],
     papers: [
       { title: "Variational Inference: A Review for Statisticians", venue: "JASA 2017", url: "https://arxiv.org/abs/1601.00670" },
@@ -195,10 +196,10 @@ const COURSES = [
     ],
     resources: [
       { type: "video", title: "MIT 6.441 — Information Theory", url: "https://ocw.mit.edu/courses/6-441-information-theory-spring-2016/" },
-      { type: "book",  title: "Elements of Information Theory · Cover & Thomas", url: null },
+      { type: "book",  title: "MIT 6.441 Information Theory — Lecture Notes (Polyanskiy & Wu)", url: "https://ocw.mit.edu/courses/6-441-information-theory-spring-2016/pages/lecture-notes/" },
     ],
     papers: [
-      { title: "A Mathematical Theory of Communication", venue: "Shannon, 1948", url: null },
+      { title: "A Mathematical Theory of Communication", venue: "Shannon, 1948", url: "https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf" },
     ],
     assignments: [
       "手推二元对称信道(BSC)的信道容量公式并用 Python 画出 C vs. p 曲线",
@@ -236,7 +237,7 @@ const COURSES = [
       { type: "video", title: "MIT 6.006 — Introduction to Algorithms", url: "https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/" },
       { type: "video", title: "MIT 6.046J — Design and Analysis of Algorithms", url: "https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/" },
       { type: "video", title: "Princeton Algorithms (Sedgewick) — Coursera", url: "https://www.coursera.org/learn/algorithms-part1" },
-      { type: "book",  title: "Introduction to Algorithms · CLRS (4th ed.)", url: null },
+      { type: "book",  title: "Algorithms · Jeff Erickson (免费开源书)", url: "https://jeffe.cs.illinois.edu/teaching/algorithms/" },
     ],
     papers: [],
     assignments: [
@@ -313,7 +314,7 @@ const COURSES = [
       { type: "book",  title: "NVIDIA CUDA C++ Programming Guide", url: "https://docs.nvidia.com/cuda/cuda-programming-guide/" },
       { type: "video", title: "GPU MODE Lectures", url: "https://github.com/gpu-mode/lectures" },
       { type: "book",  title: "Triton Language & Compiler", url: "https://github.com/triton-lang/triton" },
-      { type: "book",  title: "Programming Massively Parallel Processors · Kirk & Hwu", url: null },
+      { type: "book",  title: "Programming on Parallel Machines: GPU, Multicore, Clusters · Matloff (免费)", url: "https://heather.cs.ucdavis.edu/parprocbook" },
     ],
     papers: [
       { title: "FlashAttention: Fast and Memory-Efficient Exact Attention", venue: "NeurIPS 2022", url: "https://arxiv.org/abs/2205.14135" },
@@ -391,7 +392,7 @@ const COURSES = [
     resources: [
       { type: "video", title: "Made With ML — MLOps Course", url: "https://madewithml.com/courses/mlops/" },
       { type: "video", title: "Full Stack Deep Learning — LLM Bootcamp", url: "https://fullstackdeeplearning.com/llm-bootcamp/" },
-      { type: "book",  title: "Designing Machine Learning Systems · Chip Huyen", url: null },
+      { type: "book",  title: "Rules of Machine Learning · Google (MLOps 最佳实践)", url: "https://developers.google.com/machine-learning/guides/rules-of-ml/" },
       { type: "book",  title: "Google Cloud — MLOps Whitepaper", url: "https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning" },
       { type: "book",  title: "MLflow Documentation", url: "https://mlflow.org/docs/latest/index.html" },
       { type: "book",  title: "Weights & Biases Documentation", url: "https://docs.wandb.ai/guides/" },
@@ -440,7 +441,7 @@ const COURSES = [
     papers: [
       { title: "Statistical Modeling: The Two Cultures", venue: "Breiman, 2001", url: "https://projecteuclid.org/journals/statistical-science/volume-16/issue-3/Statistical-Modeling--The-Two-Cultures/10.1214/ss/1009213726.full" },
       { title: "XGBoost: A Scalable Tree Boosting System", venue: "KDD 2016", url: "https://arxiv.org/abs/1603.02754" },
-      { title: "Random Forests", venue: "Breiman, 2001", url: null },
+      { title: "Random Forests", venue: "Breiman, 2001", url: "https://www.stat.berkeley.edu/~breiman/randomforest2001.pdf" },
     ],
     assignments: [
       "在 Kaggle 完成一个端到端比赛(银牌目标)",
@@ -561,7 +562,7 @@ const COURSES = [
     resources: [
       { type: "video", title: "Stanford CS228 — Probabilistic Graphical Models", url: "https://ermongroup.github.io/cs228/" },
       { type: "book",  title: "Stanford CS228 — Course Notes (Kuleshov & Ermon)", url: "https://ermongroup.github.io/cs228-notes/" },
-      { type: "book",  title: "Probabilistic Graphical Models · Koller & Friedman", url: null },
+      { type: "book",  title: "Mathematics for Machine Learning (Ch.8 概率建模)", url: "https://mml-book.github.io/" },
     ],
     papers: [
       { title: "Auto-Encoding Variational Bayes (VAE)", venue: "ICLR 2014", url: "https://arxiv.org/abs/1312.6114" },
@@ -644,7 +645,7 @@ const COURSES = [
     resources: [
       { type: "video", title: "Stanford CS224N — NLP with Deep Learning", url: "http://web.stanford.edu/class/cs224n" },
       { type: "video", title: "Hugging Face NLP Course", url: "https://huggingface.co/learn/nlp-course/chapter1/1" },
-      { type: "book",  title: "Speech and Language Processing · Jurafsky & Martin", url: null },
+      { type: "book",  title: "Speech and Language Processing (3rd ed. draft) · Jurafsky & Martin (作者免费)", url: "https://web.stanford.edu/~jurafsky/slp3/" },
     ],
     papers: [
       { title: "Efficient Estimation of Word Representations in Vector Space (word2vec)", venue: "Mikolov et al., 2013", url: "https://arxiv.org/abs/1301.3781" },
