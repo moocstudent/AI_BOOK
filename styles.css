@@ -1509,6 +1509,57 @@ button { font-family: inherit; }
   .lock-cta .btn { width: 100%; }
 }
 
+/* ============== Course body prose (导读/讲义正文) ============== */
+.course-prose {
+  font-family: "Noto Serif SC", serif;
+  font-size: 16.5px;
+  line-height: 1.85;
+  color: var(--ink-soft);
+  max-width: 70ch;
+}
+.course-prose > :first-child { margin-top: 0; }
+.course-prose p { margin: 0 0 18px; }
+.course-prose strong { color: var(--ink); font-weight: 600; }
+.course-prose em { font-style: italic; color: var(--muted); }
+.course-prose h3 {
+  font-family: var(--f-display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 32px 0 12px;
+  letter-spacing: -0.01em;
+}
+.course-prose h4 {
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 24px 0 10px;
+}
+.course-prose ul, .course-prose ol { margin: 0 0 18px; padding-left: 22px; }
+.course-prose li { margin-bottom: 7px; }
+.course-prose a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--hairline-strong); }
+.course-prose a:hover { border-bottom-color: var(--accent); }
+.course-prose code {
+  font-family: var(--f-mono);
+  font-size: 0.85em;
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--ink);
+}
+.course-prose blockquote {
+  margin: 0 0 18px;
+  padding: 4px 0 4px 18px;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+  font-style: italic;
+}
+@media (max-width: 760px) {
+  .course-prose { font-size: 16px; line-height: 1.8; }
+  .course-prose h3 { font-size: 21px; }
+}
+
 /* Resource/paper entries without a verified URL — render as inert tile */
 .resource-card.nolink,
 .paper.nolink {

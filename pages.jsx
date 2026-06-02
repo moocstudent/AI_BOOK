@@ -2,6 +2,11 @@
    Pages — Home / Module / Course / About
    ========================================================= */
 
+// Render a course's markdown body ("正文/导读") to HTML.
+// Content is author-authored (not user input), so innerHTML is safe here.
+const mdToHtml = (md) =>
+  (typeof marked !== "undefined" && md) ? marked.parse(md) : "";
+
 // ============== Ticker ==============
 const Ticker = () => {
   // build a long string by repeating courses twice (so animation loops seamlessly)
@@ -392,7 +397,7 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
 
   React.useEffect(() => {
     const handler = () => {
-      const sections = ["goal", "prereq", "outline", "resources", "papers", "assignments", "checklist"];
+      const sections = ["intro", "goal", "prereq", "outline", "resources", "papers", "assignments", "checklist"];
       let current = "goal";
       for (const s of sections) {
         const el = document.getElementById(`s-${s}`);
@@ -405,6 +410,7 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
   }, [courseId]);
 
   const tocs = [
+    ...(c.body ? [["intro", "00 · 导读"]] : []),
     ["goal", "01 · 课程目标"],
     ["prereq", "02 · 先修依赖"],
     ["outline", "03 · 知识大纲"],
@@ -495,6 +501,13 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
               <span>{c.tag}</span>
               <span style={{ marginLeft: "auto" }}>{c.prereq.length === 0 ? "无先修" : `先修 ${c.prereq.length} 门`}</span>
             </div>
+
+            {c.body && (
+              <section id="s-intro" className="cs-block">
+                <h2><span className="idx">00</span> <span className="cn">导读 / Overview</span></h2>
+                <div className="course-prose" dangerouslySetInnerHTML={{ __html: mdToHtml(c.body) }} />
+              </section>
+            )}
 
             <section id="s-goal" className="cs-block">
               <h2><span className="idx">01</span> <span className="cn">课程目标 / Goal</span></h2>
