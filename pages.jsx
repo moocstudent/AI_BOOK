@@ -7,6 +7,47 @@
 const mdToHtml = (md) =>
   (typeof marked !== "undefined" && md) ? marked.parse(md) : "";
 
+// ============== Bookmark ==============
+// One bookmark per course; value = { ts, pct, sec, note }. sec = active section id.
+function secLabel(sec) {
+  return ({
+    intro: "导读", goal: "课程目标", prereq: "先修依赖", outline: "知识大纲",
+    resources: "资源清单", papers: "必读论文", assignments: "作业项目", checklist: "自测清单",
+  })[sec] || "";
+}
+function fmtBmTime(ts) {
+  try { return new Date(ts).toLocaleString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }
+  catch (e) { return ""; }
+}
+const BookmarkBox = ({ bm, onCapture, onNote, onRemove, onJump }) => {
+  const [note, setNote] = React.useState(bm ? (bm.note || "") : "");
+  React.useEffect(() => { setNote(bm ? (bm.note || "") : ""); }, [bm ? bm.ts : 0]);
+  if (!bm) {
+    return (
+      <div className="bm-box">
+        <button className="bm-add" onClick={onCapture}>＋ 加书签 · 记住读到这里</button>
+      </div>
+    );
+  }
+  return (
+    <div className="bm-box has-bm">
+      <div className="bm-head">
+        <span className="bm-label">📑 书签</span>
+        <span className="bm-time">{fmtBmTime(bm.ts)}</span>
+      </div>
+      {bm.sec ? <div className="bm-at">读到:{secLabel(bm.sec)}</div> : null}
+      <input className="bm-note" type="text" maxLength={80} placeholder="加一句备注(可选)…"
+        value={note} onChange={(e) => setNote(e.target.value)}
+        onBlur={() => onNote(note)} onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }} />
+      <div className="bm-actions">
+        <button className="bm-jump" onClick={onJump}>跳到书签</button>
+        <button className="bm-upd" title="更新到当前位置" onClick={onCapture}>↻</button>
+        <button className="bm-rm" onClick={onRemove}>删除</button>
+      </div>
+    </div>
+  );
+};
+
 // ============== Ticker ==============
 const Ticker = () => {
   // build a long string by repeating courses twice (so animation loops seamlessly)
@@ -29,7 +70,7 @@ const Ticker = () => {
 };
 
 // ============== HOME ==============
-const HomePage = ({ progress, toggleProgress, nav, user, onLogin }) => {
+const HomePage = ({ progress, bookmarks, toggleProgress, nav, user, onLogin }) => {
   const doneCount = Object.values(progress).filter(Boolean).length;
   const total = COURSES.length;
   const pct = Math.round((doneCount / total) * 100);
@@ -110,6 +151,36 @@ const HomePage = ({ progress, toggleProgress, nav, user, onLogin }) => {
         </div>
         <div className="linebar"><div className="fill" style={{ width: `${pct}%` }} /></div>
       </section>
+
+      {(() => {
+        if (!bookmarks) return null;
+        const list = COURSES.map((cc) => ({ cc, b: bookmarks[cc.id] })).filter((x) => x.b).sort((a, b) => (b.b.ts || 0) - (a.b.ts || 0));
+        if (!list.length) return null;
+        return (
+          <section className="section bm-resume-sect">
+            <div className="container">
+              <div className="sect-head">
+                <div className="num">§ 00 / BOOKMARKS</div>
+                <div className="title"><span className="cn">继续阅读</span><span style={{ marginLeft: 14, opacity: 0.5 }}>Resume.</span></div>
+                <div className="aside">从你上次停下的地方继续</div>
+              </div>
+              <div className="bm-resume-grid">
+                {list.map(({ cc, b }) => {
+                  const mm = MODULES.find((x) => x.id === cc.moduleId);
+                  return (
+                    <div key={cc.id} className="bm-resume-card" onClick={() => { window.__pendingBM = cc.id; nav("#/c/" + cc.id); }}>
+                      <div className="brc-code mono">{cc.code} · {mm ? mm.zh : ""}</div>
+                      <div className="brc-title">{cc.zh}</div>
+                      {b.note ? <div className="brc-note">“{b.note}”</div> : null}
+                      <div className="brc-foot mono"><span>{fmtBmTime(b.ts)}</span><span className="brc-go">继续 →</span></div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <Ticker />
 
@@ -388,7 +459,7 @@ const ModulePage = ({ moduleId, progress, toggleProgress, nav, user, onLogin }) 
 };
 
 // ============== COURSE PAGE ==============
-const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
+const CoursePage = ({ courseId, progress, toggleProgress, bookmarks, setBookmark, removeBookmark, nav, user }) => {
   const c = COURSES.find((x) => x.id === courseId);
   if (!c) return <div className="container" style={{ padding: 80 }}>未找到课程。</div>;
   const m = MODULES.find((mm) => mm.id === c.moduleId);
@@ -432,6 +503,34 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
   const ci = sibs.findIndex(x => x.id === c.id);
   const prev = sibs[ci - 1];
   const next = sibs[ci + 1];
+
+  // ---- Bookmark: capture current scroll position / jump back / note ----
+  const bm = bookmarks ? bookmarks[c.id] : null;
+  const captureBM = () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    setBookmark(c.id, { ts: Date.now(), pct, sec: activeSection });
+  };
+  const jumpBM = () => {
+    if (!bm) return;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    window.scrollTo({ top: (bm.pct || 0) * max, behavior: "smooth" });
+  };
+  const setBMNote = (note) => setBookmark(c.id, { note });
+
+  // Resume: arriving from a home-page bookmark card scrolls to its saved spot.
+  React.useEffect(() => {
+    if (window.__pendingBM !== courseId) return;
+    window.__pendingBM = null;
+    const b = bookmarks && bookmarks[courseId];
+    if (!b) return;
+    const tid = setTimeout(() => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo({ top: (b.pct || 0) * max, behavior: "smooth" });
+    }, 220);
+    return () => clearTimeout(tid);
+    // eslint-disable-next-line
+  }, [courseId]);
 
   return (
     <div className="page">
@@ -622,6 +721,9 @@ const CoursePage = ({ courseId, progress, toggleProgress, nav }) => {
               <span>{isDone ? "✓ 已完成" : "□ 标记完成"}</span>
               <span style={{ opacity: 0.6 }}>☁ Firebase</span>
             </button>
+
+            <BookmarkBox bm={bm} onCapture={captureBM} onNote={setBMNote}
+              onRemove={() => removeBookmark(c.id)} onJump={jumpBM} />
           </aside>
         </div>
       </div>
