@@ -13,7 +13,7 @@
   rel="stylesheet"
 />
 
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <div id="root"></div>
@@ -37,11 +37,14 @@
   <script src="firebase-init.js"></script>
 
   <!-- App scripts (order matters) -->
-  <script type="text/babel" src="data.jsx"></script>
-  <script type="text/babel" src="tweaks-panel.jsx"></script>
-  <script type="text/babel" src="auth.jsx"></script>
-  <script type="text/babel" src="roadmap.jsx"></script>
-  <script type="text/babel" src="pages.jsx"></script>
-  <script type="text/babel" src="app.jsx"></script>
+  <script type="text/babel" src="data.jsx?v=4"></script>
+  <script type="text/babel" src="tweaks-panel.jsx?v=4"></script>
+  <script type="text/babel" src="auth.jsx?v=4"></script>
+  <script type="text/babel" src="roadmap.jsx?v=4"></script>
+  <!-- 讲义插图:定义 FIGN 注册表与 <Figure>,pages.jsx 渲染导读时用 -->
+  <script type="text/babel" src="figures.jsx?v=4"></script>
+  <script type="text/babel" src="figures2.jsx?v=4"></script>
+  <script type="text/babel" src="pages.jsx?v=4"></script>
+  <script type="text/babel" src="app.jsx?v=4"></script>
 </body>
 </html>

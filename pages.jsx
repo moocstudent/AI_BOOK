@@ -7,6 +7,42 @@
 const mdToHtml = (md) =>
   (typeof marked !== "undefined" && md) ? marked.parse(md) : "";
 
+// 导读正文里,单独一行的 "@fig c101-svd" 是一张讲义插图。
+// 按这些标记把 markdown 切开,让插图作为真正的 React 节点插在段落之间,
+// 而不是被 marked 当成普通文本吞掉。图号按每门课出现顺序自动编。
+const FIG_MARK = /^@fig[ \t]+([A-Za-z0-9_-]+)[ \t]*$/gm;
+function splitFigures(md) {
+  if (!md) return [];
+  const out = [];
+  let last = 0, m;
+  FIG_MARK.lastIndex = 0;
+  while ((m = FIG_MARK.exec(md)) !== null) {
+    out.push({ kind: "md", text: md.slice(last, m.index) });
+    out.push({ kind: "fig", name: m[1] });
+    last = m.index + m[0].length;
+  }
+  out.push({ kind: "md", text: md.slice(last) });
+  return out;
+}
+
+const CourseProse = ({ md }) => {
+  const parts = React.useMemo(() => splitFigures(md), [md]);
+  let figNo = 0;
+  return (
+    <div className="course-prose">
+      {parts.map((p, i) => {
+        if (p.kind !== "fig") {
+          if (!p.text || !p.text.trim()) return null;
+          return <div key={i} dangerouslySetInnerHTML={{ __html: mdToHtml(p.text) }} />;
+        }
+        if (typeof Figure === "undefined") return null;
+        figNo += 1;
+        return <Figure key={i} name={p.name} idx={figNo} />;
+      })}
+    </div>
+  );
+};
+
 // ============== Bookmark ==============
 // One bookmark per course; value = { ts, pct, sec, note }. sec = active section id.
 function secLabel(sec) {
@@ -604,7 +640,7 @@ const CoursePage = ({ courseId, progress, toggleProgress, bookmarks, setBookmark
             {c.body && (
               <section id="s-intro" className="cs-block">
                 <h2><span className="idx">00</span> <span className="cn">导读 / Overview</span></h2>
-                <div className="course-prose" dangerouslySetInnerHTML={{ __html: mdToHtml(c.body) }} />
+                <CourseProse md={c.body} />
               </section>
             )}
 
