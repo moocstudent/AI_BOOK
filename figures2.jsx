@@ -601,3 +601,110 @@ FIGN["c406-capstone"] = ({ idx }) => {
     </FigFrame>
   );
 };
+
+/* =========================================================
+   c407 本地大模型实战 —— 六步链路,每步下面挂着它的典型故障
+   ========================================================= */
+FIGN["c407-pipeline"] = ({ idx }) => {
+  const steps = [
+    { t: "拿代码", s: "git clone", f: "仓库停更 →\n决定依赖版本", k: "" },
+    { t: "拿权重", s: "11.6 GB", f: "git-lfs 没装 →\n目录齐全但没权重", k: "a" },
+    { t: "装环境", s: "venv + pip", f: "不锁版本 →\nKV Cache 接口报错", k: "a" },
+    { t: "加载", s: "from_pretrained", f: "device_map=auto →\n静默卸载到磁盘", k: "a" },
+    { t: "对话", s: "cli / web / API", f: "回答正确\n但每字 48 秒", k: "" },
+    { t: "排查", s: "读日志", f: "加载太快\n= 根本没读", k: "p" },
+  ];
+  const X = 14, BW = 98, GAP = 10;
+  return (
+    <FigFrame h={258} idx={idx}
+      cap="从 git clone 到「它回答我了」一共六步,而其中四步各有一个不会报错的坑。注意最后一步:这条链路上最贵的故障都是静默的——程序照常运行,只是慢一千倍。">
+      <FT x={14} y={20} c="tt">本地部署的六步链路</FT>
+      <FT x={646} y={20} c="tn" a="end">下方为该步的典型故障</FT>
+
+      {steps.map((st, i) => {
+        const x = X + i * (BW + GAP);
+        return (
+          <g key={i}>
+            <FB x={x} y={34} w={BW} h={46} k={st.k} t={st.t} s={st.s} />
+            {i < steps.length - 1 && <FA x1={x + BW + 1} y1={57} x2={x + BW + GAP - 2} y2={57} />}
+            {/* drop line to the failure note */}
+            <line x1={x + BW / 2} y1={80} x2={x + BW / 2} y2={98} className="ln d" />
+            <rect x={x} y={98} width={BW} height={52} rx={3}
+              className={st.k === "a" ? "bx a" : "bx g"} fillOpacity={0.5} />
+            {st.f.split("\n").map((ln, j) => (
+              <FT key={j} x={x + BW / 2} y={116 + j * 14} c={st.k === "a" ? "ta" : "tn"} a="middle">{ln}</FT>
+            ))}
+          </g>
+        );
+      })}
+
+      <line x1={14} y1={170} x2={646} y2={170} className="axis" />
+      <FT x={14} y={190} c="tk">四个坑里有三个不会报错。</FT>
+      <FT x={14} y={210} c="tn" w={632}>
+        没装 git-lfs 会给你一个看起来完整的目录;device_map="auto" 内存不够时不会失败,只会把权重卸到磁盘;而版本不匹配虽然会报错,报的却是一句和真正原因毫无关系的 KeyError。养成的习惯应该是:每一步做完都验证一次,而不是等到最后一步才发现不对。
+      </FT>
+    </FigFrame>
+  );
+};
+
+/* =========================================================
+   c407 内存账本 —— 精度 × 规模 决定这台机器装不装得下
+   ========================================================= */
+FIGN["c407-ledger"] = ({ idx }) => {
+  // bytes per parameter by precision
+  const precs = [
+    { n: "fp32", b: 4, note: "默认值,几乎没必要" },
+    { n: "bf16 / fp16", b: 2, note: "最常用" },
+    { n: "int8", b: 1, note: "需要 CUDA" },
+    { n: "int4", b: 0.5, note: "需要 CUDA 或 GGUF" },
+  ];
+  const models = [{ n: "1.5B", p: 1.5 }, { n: "6B", p: 6.24 }, { n: "13B", p: 13 }];
+  const X = 132, CW = 84, SC = 5.0;
+  // 一台 16GB 笔记本开着浏览器时的真实可用空间
+  const budget = 3.35;
+  return (
+    <FigFrame h={262} idx={idx}
+      cap="权重体积 = 参数量 × 每参数字节数。橙色竖线是那台 15.7GB 笔记本开着浏览器时真正能给权重的空间(可用 4.85GB 再减 1.5GB 运行时)——它比「我有 16GB」给人的印象窄得多,而只有 int4 的 1.5B 与 6B 能落在它左边。">
+      <FT x={14} y={20} c="tt">权重体积 vs 一台 16GB 笔记本的真实预算</FT>
+
+      {/* column headers */}
+      {models.map((m, i) => (
+        <FT key={i} x={X + 46 + i * CW} y={20} c="tn" a="middle">{m.n}</FT>
+      ))}
+      <FT x={X + 3 * CW + 30} y={20} c="tn">备注</FT>
+
+      {precs.map((pr, r) => {
+        const y = 34 + r * 42;
+        return (
+          <g key={r}>
+            <FT x={14} y={y + 24} c="t">{pr.n}</FT>
+            <FT x={118} y={y + 24} c="tn" a="end">{`${pr.b} B/参数`}</FT>
+            {models.map((m, i) => {
+              const gb = m.p * pr.b;
+              const fits = gb <= budget;
+              return (
+                <g key={i}>
+                  <rect x={X + i * CW} y={y + 10} width={CW - 8} height={20} rx={3}
+                    className={fits ? "bx p" : "bx m"} fillOpacity={fits ? 1 : 0.45} />
+                  <FT x={X + (CW - 8) / 2 + i * CW} y={y + 24} c={fits ? "tp" : "tn"} a="middle">
+                    {`${gb < 10 ? gb.toFixed(1) : Math.round(gb)} GB`}
+                  </FT>
+                </g>
+              );
+            })}
+            <FT x={X + 3 * CW + 30} y={y + 24} c="tn">{pr.note}</FT>
+          </g>
+        );
+      })}
+
+      {/* the real budget line */}
+      <line x1={X + budget * SC} y1={28} x2={X + budget * SC} y2={210} className="ln a d" />
+      <FT x={X + budget * SC + 6} y={222} c="ta">真实可用 ≈ 3.35 GB</FT>
+      <FT x={14} y={222} c="tk">蓝色 = 装得下</FT>
+
+      <FT x={14} y={244} c="tn" w={632}>
+        关键在于用「可用内存」而不是「总内存」:那台机器总共 15.7GB,但开着浏览器时可用只剩 4.85GB,再扣掉 Python 与 PyTorch 运行时约 1.5GB,留给权重的就只有 3.35GB。而 6B 在 bf16 下要 11.6GB——差的不是一点,是三倍多。
+      </FT>
+    </FigFrame>
+  );
+};

@@ -1,4 +1,4 @@
-// 课程体系数据 —— 4 模块 / 20 门课
+// 课程体系数据 —— 4 模块 / 21 门课
 // 所有 resources/papers URL 均经过 WebFetch 实际核验(2026-05-26);
 // 全部为开源/免费合法资源(官方课程、作者免费书、开源教材、arXiv、CC 授权);
 // 原版权书已替换为同主题的开源/免费替代。前端对 url:null 仍兼容(.nolink 灰态)。
@@ -47,9 +47,9 @@ const MODULES = [
     en: "Frontiers & Applications",
     tagline: "把武器装上,走进真实的研究现场。",
     description:
-      "NLP、CV、大语言模型、AI 安全与对齐、大模型应用工程、研究方法与 Capstone。读 2018-2025 的关键论文,做端到端的项目。",
-    weeks: "30 ~ 40 周",
-    credits: 43,
+      "NLP、CV、大语言模型、AI 安全与对齐、大模型应用工程、本地部署实战、研究方法与 Capstone。读 2018-2025 的关键论文,把模型真正跑起来,做端到端的项目。",
+    weeks: "34 ~ 45 周",
+    credits: 49,
     accent: "accent",
   },
 ];
@@ -1366,6 +1366,111 @@ RLHF 让强化学习从一个相对小众的方向变成了大模型工程师的
       "能 5 分钟完成论文第一遍,判断是否值得深读",
       "复现日志含环境、步骤、结果数值对比与差异分析",
       "第三方按 README 在 10 分钟内能运行 demo",
+    ],
+  },
+  {
+    id: "c407",
+    code: "CS-407",
+    moduleId: "m4",
+    zh: "本地大模型实战:从下载到对话",
+    en: "Running an Open LLM Locally",
+    credits: 6,
+    weeks: 4,
+    prereq: ["c403"],
+    tag: "必修 · 实践",
+    goal:
+      "把一个开源大模型在自己的机器上完整跑起来:环境、权重、加载、对话、排查。目标不是学新理论,而是打通那条从「下载」到「它回答我了」的链路。",
+    body: `**这门课只解决一件事:让模型在你自己的机器上真的跑起来。** 前面的课教你模型为什么能工作,这门课教你把它装进一台具体的、内存有限的、可能没有显卡的机器里。这两件事之间的距离,比大多数人预期的要远——而且几乎所有的坑都不在论文里,只在别人的报错日志里。
+
+我们以 **ChatGLM3-6B** 为例走完整条链路。选它的理由很实际:中文效果好、仓库自带命令行/网页/API 三套 demo、模型足够小到笔记本可以尝试、又足够大到能把所有典型的坑都踩一遍。
+
+@fig c407-pipeline
+
+### 六步,每一步都有一个坑
+
+**第一步:拿代码。** \`git clone https://github.com/THUDM/ChatGLM3.git\`。这一步基本不会出错,但要注意这个仓库最后更新停在 2025 年 1 月,官方重心已转到 GLM-4 系列——这直接决定了下一步的版本选择。
+
+**第二步:拿权重。这里是第一个大坑。** 权重不在 GitHub 上,在 Hugging Face(\`THUDM/chatglm3-6b\`)。如果你直接 git clone 模型仓库而本机没装 git-lfs,你会得到一个**看起来完全正常**的目录:config.json 在、各种 .py 在、连 index.json 都在,**唯独没有权重**——那 7 个 safetensors 分片一个都没下来。判断方法很简单:检查目录里有没有 7 个 1~1.9GB 的 \`model-0000X-of-00007.safetensors\`,总计约 11.6GB。更稳妥的做法是用 \`huggingface_hub\` 的 \`snapshot_download\` 脚本下载,支持断点续传,还能用 \`allow_patterns\` 只取 safetensors,跳过体积相同的 .bin 副本,省下 12GB 磁盘。
+
+**第三步:装环境。第二个坑是版本。** 这一步的每个版本号都不是随便定的:
+
+| 依赖 | 版本 | 原因 |
+|---|---|---|
+| Python | 3.10 ~ 3.12 | 3.13+ 没有对应的 torch/transformers 轮子 |
+| torch | 2.3.1 | 无显卡务必用 \`--index-url .../whl/cpu\`,否则默认装 2.5GB 的 CUDA 版 |
+| transformers | **4.40.2** | 4.42+ 重构了 KV Cache 接口,仓库自带的建模代码会直接报错 |
+| numpy | **< 2.0** | torch 2.3.1 按 NumPy 1.x 的 ABI 编译,装 2.x 会 ABI 报错 |
+
+「锁版本」在这里不是保守,而是必需:ChatGLM3 的 \`modeling_chatglm.py\` 是随权重一起下发的 \`trust_remote_code\` 代码,它按 2023 年的 transformers 接口写成,而上游已经不再跟进。**遇到 trust_remote_code 的模型,先查它最后一次更新的时间,再决定依赖版本。**
+
+**第四步:加载。第三个坑最隐蔽。** 仓库自带的 \`cli_demo.py\` 里写的是 \`device_map="auto"\`,而且没指定 \`torch_dtype\`。这两处在无显卡的机器上都要改:不指定精度会按 float32 加载,6B 需要 24GB;而 \`device_map="auto"\` 在内存不够时不会报错,它会把权重悄悄卸载到磁盘,然后每生成一个 token 都重新读盘一次。
+
+正确写法是只在有 CUDA 时才传 \`device_map\`:
+
+\`\`\`python
+DTYPE = torch.float16 if torch.cuda.is_available() else torch.bfloat16
+kwargs = dict(trust_remote_code=True, torch_dtype=DTYPE,
+              low_cpu_mem_usage=True)
+if torch.cuda.is_available():
+    kwargs["device_map"] = "auto"
+model = AutoModel.from_pretrained(MODEL_PATH, **kwargs).eval()
+\`\`\`
+
+@fig c407-ledger
+
+**第五步:对话。** \`python cli_demo.py\`,输入内容回车,\`clear\` 清历史,\`stop\` 退出。仓库还提供 Gradio 网页版、Streamlit 网页版,以及一个 OpenAI 兼容的 API 服务(\`openai_api_demo/api_server.py\`)——最后这个很有用,它让你已有的、按 OpenAI 接口写的代码不改一行就能指向本地模型。
+
+**第六步:排查。** 如果慢得离谱,先看加载日志有没有这句:\`Some parameters are on the meta device because they were offloaded to the disk and cpu\`。还有一个反直觉的信号:**加载太快是坏事**。11.6GB 如果六秒就"加载完成",说明它根本没读进内存。
+
+### 一次真实的测量
+
+在一台 i5-12450H、15.7GB 内存、无独显的笔记本上,用未修改的 \`device_map="auto"\` 跑这个模型,实测结果是:**629.3 秒生成 13 个 token**,即 48.4 秒一个字。模型输出的中文完全正确,程序也正常退出——它"能跑",只是每个字要等将近一分钟。
+
+这个数字值得记住,因为它教的不是"CPU 慢",而是**故障可以静默**:没有报错、没有警告弹窗,只有一行淹没在日志里的提示和一个慢一千倍的系统。工程上最难查的问题往往是这一类。
+
+### 硬件到底要多少
+
+先记住这条不等式:**权重体积 ≤ 可用内存 − 1.5GB**。注意是"可用",不是"总共"——那台 15.7GB 的笔记本,开着浏览器时可用内存只有 4.85GB,而单个进程占用最高的也才 0.39GB;那 11GB 是被几十个小进程一起吃掉的,这是桌面系统的常态。
+
+按精度换算权重体积:fp16/bf16 是每参数 2 字节,int8 是 1 字节,int4 是 0.5 字节。6B 模型在 bf16 下就是 12GB,在 int4 下是 3.7GB。
+
+**关于量化的一个具体限制:** ChatGLM3 自带的 \`quantization.py\` 第 126 行有一句硬性断言,要求权重必须在 CUDA 设备上,它的 int4 路径在纯 CPU 上用不了。想在 CPU 上跑 int4,得换 llama.cpp / Ollama 的 GGUF 格式——同级别 CPU 上通常能到 5~8 token/秒,是能正常对话的速度。
+
+### 常见的坑
+
+第一个坑是**盲目下载**:12GB 下完了才发现机器跑不动。算一下权重体积和可用内存只要两分钟,下载要半小时——先算再下。第二个坑是**不锁版本**:pip install 最新版,然后在一堆看不懂的 KeyError 里查半天。第三个坑是**把配置问题当成硬件问题**:看到慢就断定"CPU 不行",结果真正的原因是一个可以改的加载参数。养成先看日志、再下结论的习惯,这门课的价值就已经收回来了。`,
+    outline: [
+      "开源模型生态:GitHub 放代码,Hugging Face 放权重",
+      "git-lfs 陷阱与 snapshot_download 的正确用法",
+      "版本锁定:trust_remote_code 模型的依赖考古",
+      "加载参数:torch_dtype、low_cpu_mem_usage 与 device_map 的陷阱",
+      "四种 demo:命令行、Gradio、Streamlit、OpenAI 兼容 API",
+      "性能排查:静默降级的识别与内存账本",
+    ],
+    resources: [
+      { type: "code", title: "ChatGLM3 官方仓库(含 basic_demo / finetune_demo)", url: "https://github.com/THUDM/ChatGLM3" },
+      { type: "code", title: "THUDM/chatglm3-6b 权重与模型卡", url: "https://huggingface.co/THUDM/chatglm3-6b" },
+      { type: "doc", title: "Transformers · Big Model Inference(device_map 与卸载机制)", url: "https://huggingface.co/docs/accelerate/usage_guides/big_modeling" },
+      { type: "doc", title: "huggingface_hub · 下载与断点续传", url: "https://huggingface.co/docs/huggingface_hub/guides/download" },
+      { type: "code", title: "llama.cpp — CPU 上跑量化模型的事实标准", url: "https://github.com/ggml-org/llama.cpp" },
+      { type: "code", title: "Ollama — 本地模型的一键运行器", url: "https://github.com/ollama/ollama" },
+    ],
+    papers: [
+      { title: "ChatGLM: A Family of Large Language Models from GLM-130B to GLM-4", venue: "GLM Team, 2024", url: "https://arxiv.org/abs/2406.12793" },
+      { title: "GLM-130B: An Open Bilingual Pre-trained Model", venue: "Zeng et al., ICLR 2023", url: "https://arxiv.org/abs/2210.02414" },
+      { title: "LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale", venue: "Dettmers et al., 2022", url: "https://arxiv.org/abs/2208.07339" },
+    ],
+    assignments: [
+      "在本机完整跑通一个开源模型:写下每一步的命令、报错与解决办法,形成一份可复现的部署笔记",
+      "写一个部署预检脚本:输入参数量与精度,读取本机可用内存,输出「能否装下 / 预估 token 速度」",
+      "对同一模型做加载方式对比实验(改 / 不改 device_map),各测 3 次,报告 token/秒的差异并解释原因",
+      "把本地模型接到 OpenAI 兼容 API 后面,用一段原本调用云端 API 的代码不改逻辑直连本地",
+    ],
+    checklist: [
+      "能判断一个模型目录是否真的下全了权重",
+      "看到 trust_remote_code 的模型,知道要去查它对应的依赖版本",
+      "能从日志里识别出磁盘卸载,而不是把它当成 CPU 慢",
+      "下载权重之前能口算出这台机器装不装得下",
     ],
   },
 ];

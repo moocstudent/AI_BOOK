@@ -4,6 +4,14 @@
 
 // Render a course's markdown body ("正文/导读") to HTML.
 // Content is author-authored (not user input), so innerHTML is safe here.
+// 资源卡片的类别标签。未知 type 回落到 book。
+const RES_KIND = {
+  video: "▶ Video / 课程",
+  book: "▣ Book / 教材",
+  code: "◆ Code / 仓库",
+  doc: "◈ Docs / 文档",
+};
+
 const mdToHtml = (md) =>
   (typeof marked !== "undefined" && md) ? marked.parse(md) : "";
 
@@ -685,7 +693,7 @@ const CoursePage = ({ courseId, progress, toggleProgress, bookmarks, setBookmark
                 <div className="resource-grid">
                   {c.resources.map((r, i) => {
                     const inner = <>
-                      <div className="kind">{r.type === "video" ? "▶ Video / 课程" : "▣ Book / 教材"}</div>
+                      <div className="kind">{RES_KIND[r.type] || RES_KIND.book}</div>
                       <div className="rt">{r.title}</div>
                     </>;
                     return r.url
